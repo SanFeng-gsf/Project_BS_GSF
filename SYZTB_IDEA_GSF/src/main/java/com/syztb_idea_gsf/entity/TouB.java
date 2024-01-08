@@ -38,6 +38,11 @@ public class TouB implements Serializable {
     private String name;
 
     /**
+     * 投标公司法定代表人
+     */
+    private String peopleName;
+
+    /**
      * 所投公司的名称
      */
     private String sName;

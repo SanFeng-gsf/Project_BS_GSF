@@ -22,9 +22,9 @@ public class UserController {
      * 发送手机验证码
      */
     @PostMapping("/code")
-    public Result sendCode(@RequestParam("phone") String phone) {
+    public Result sendCode(@RequestBody LoginFormDTO loginForm) {
         // TODO 发送短信验证码并保存验证码
-        return userService.sendCode(phone);
+        return userService.sendCode(loginForm.getPhone());
     }
 
     /**
@@ -34,6 +34,15 @@ public class UserController {
     @PostMapping("/login")
     public Result login(@RequestBody LoginFormDTO loginForm){
         return userService.login(loginForm);
+    }
+
+    /**
+     * 公司名称登入 (忘记手机号，可以重新绑定新的手机号)  (需前端先进行判断是否为公司登入)
+     * 规定一个手机号只绑定一家公司
+     */
+    @PostMapping("/loginByName")
+    public Result loginByName(@RequestBody LoginFormDTO loginForm){
+        return userService.loginByName(loginForm.getName(),loginForm.getPassword());
     }
 
     /**
@@ -57,7 +66,8 @@ public class UserController {
      * 根据手机号查询用户基本信息
      */
     @PostMapping("/selectByPhone")
-    public Result selectByPhone(@RequestBody String phone){
-        return userService.selectByPhone(phone);
+    public Result selectByPhone(@RequestBody LoginFormDTO loginForm){
+        return userService.selectByPhone(loginForm.getPhone());
     }
+
 }

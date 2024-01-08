@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.syztb_idea_gsf.mapper.ZhaoBMapper">
+
+    <sql id="baseColumn">
+        id,phone,name,people_name,project_name,ex,price,create_time,update_time
+    </sql>
+    
+    <select id="selectByName" resultType="com.syztb_idea_gsf.entity.ZhaoB">
+        select <include refid="baseColumn"/>
+        from zhao_b where name = #{name}
+    </select>
+    <select id="selectAll" resultType="com.syztb_idea_gsf.entity.ZhaoB">
+        select <include refid="baseColumn"/>
+        from zhao_b
+    </select>
+</mapper>

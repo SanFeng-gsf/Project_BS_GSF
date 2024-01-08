@@ -37,8 +37,6 @@ import static com.syztb_idea_gsf.utils.SystemConstants.USER_NICK_NAME_PREFIX;
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IUserService {
 
-//    @Autowired
-//    private UserMapper userMapper;
     @Resource
     private StringRedisTemplate stringRedisTemplate;
 
@@ -73,15 +71,27 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
             }
         }
         if (code == null && password != null) {
-            User user = query().eq("phone", phone).one();
-//            List<User> user = userMapper.selectByMap(Map.of("phone", phone));
-            if (user == null) {
-                // 该用户为新用户，重新创建 (前端需获取进行判断)
-                return Result.ok(-1);
+            String cathePassword = stringRedisTemplate.opsForValue().get(LOGIN_PASSWORD_KEY + phone);
+            if(cathePassword!=null){
+                // 先将前端加密后的密码解密 再与缓存中的密码比较
+                // ？
+                if(!password.equals(cathePassword)){
+                    return Result.fail("密码错误");
+                }
+            }else {
+                User user = query().eq("phone", phone).one();
+                // List<User> user = userMapper.selectByMap(Map.of("phone", phone));
+                if (user == null) {
+                    // 该用户为新用户，重新创建 (前端需获取进行判断)
+                    return Result.ok(-1);
+                }
+                if(!password.equals(user.getPassword())){
+                    return Result.fail("密码错误");
+                }
+                // 将密码存入缓存中
+                stringRedisTemplate.opsForValue().set(LOGIN_PASSWORD_KEY + phone,password,LOGIN_PASSWORD_TTL,TimeUnit.MINUTES);
             }
-            if(!password.equals(user.getPassword())){
-                return Result.fail("密码错误");
-            }
+
             // bcrypt 加密 (不能解密) 注册时加密存入数据库
 //            if(!BCrypt.checkpw(password,newPassword)){
 //                return Result.fail("密码错误");
@@ -114,6 +124,31 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     }
 
     @Override
+    public Result loginByName(String name, String password) {
+        // 先将前端加密后的密码解密 再与缓存中的密码比较
+        // ？
+        String key = LOGIN_NAME_PASSWORD_KEY + name;
+        String cathePassword = stringRedisTemplate.opsForValue().get(key);
+        if(cathePassword==null){
+            User user = query().eq("name", name).one();
+            if(user==null){
+                // 该用户为新用户，重新创建 (前端需获取进行判断)
+                return Result.ok(-1);
+            }
+            cathePassword = user.getPassword();
+            if(!password.equals(cathePassword)){
+                return Result.fail("密码错误");
+            }
+            stringRedisTemplate.opsForValue().set(key,password,LOGIN_NAME_PASSWORD_TTL,TimeUnit.MINUTES);
+        }else {
+            if(!password.equals(cathePassword)){
+                return Result.fail("密码错误");
+            }
+        }
+        return Result.ok();
+    }
+
+    @Override
     public Result logout(HttpServletRequest request) {
         String token = request.getHeader("authorization");
         String key = RedisConstants.LOGIN_USER_KEY + token;
@@ -132,6 +167,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         String phone = user.getPhone();
         if (RegexUtils.isPhoneInvalid(phone)) {
             return Result.fail("手机号无效");
+        }
+        User sqluser = query().eq("phone",phone).one();
+        if(sqluser!=null){
+            return Result.fail("该手机号已被绑定，请更换新的手机号");
         }
         String name = user.getName();
         User user1 = query().eq("name", name).one();

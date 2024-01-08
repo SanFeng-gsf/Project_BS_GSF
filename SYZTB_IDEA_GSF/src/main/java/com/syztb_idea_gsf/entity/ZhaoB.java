@@ -38,6 +38,11 @@ public class ZhaoB implements Serializable {
     private String name;
 
     /**
+     * 招标公司法定代表人
+     */
+    private String peopleName;
+
+    /**
      * 招标项目名称
      */
     private String projectName;
@@ -45,7 +50,7 @@ public class ZhaoB implements Serializable {
     /**
      * 招标项目说明
      */
-    private String explain;
+    private String ex;
 
     /**
      * 招标最高价格

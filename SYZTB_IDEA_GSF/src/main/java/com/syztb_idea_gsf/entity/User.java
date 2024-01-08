@@ -44,6 +44,11 @@ public class User implements Serializable {
     private String name;
 
     /**
+     * 公司法定代表人
+     */
+    private String peopleName;
+
+    /**
      * 用户头像
      */
     private String icon = "";

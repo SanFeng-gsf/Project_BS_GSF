@@ -10,4 +10,8 @@ public class LoginFormDTO {
     private String phone;
     private String code;
     private String password;
+    /**
+     * 公司名称
+     */
+    private String name;
 }
