@@ -43,4 +43,9 @@ public class ZhaoBController {
         return iZhaoBService.insert(zhaoB);
     }
 
+    /**
+     *
+     */
+
+
 }
