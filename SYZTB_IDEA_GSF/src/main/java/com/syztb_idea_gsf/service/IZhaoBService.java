@@ -8,7 +8,10 @@ public interface IZhaoBService extends IService<ZhaoB> {
 
     Result selectByName(String name);
 
+    Result selectByProjectName(String projectName);
+
     Result selectAll(Integer current);
 
     Result insert(ZhaoB zhaoB);
+
 }

@@ -2,6 +2,7 @@ package com.syztb_idea_gsf.utils;
 
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -9,6 +10,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -77,15 +79,19 @@ public class CacheClient {
         String key = keyPrefix + id;
         // 从Redis查询缓存
         String json = stringRedisTemplate.opsForValue().get(key);
-        if(StrUtil.isBlank(json)){
-            return null;
-        }
-        // 命中 先把 json 反序列化为对象
-        RedisData redisData = JSONUtil.toBean(json, RedisData.class);
-        R r = JSONUtil.toBean((JSONObject) redisData.getData(),type);
-        LocalDateTime expireTime = redisData.getExpireTime();
-        if(expireTime.isAfter(LocalDateTime.now())){
-            return r;
+        R r = null;
+        if(!StrUtil.isBlank(json)){
+            // 命中 先把 json 反序列化为对象
+            RedisData redisData = JSONUtil.toBean(json, RedisData.class);
+            r = JSONUtil.toBean((JSONObject) redisData.getData(),type);
+            LocalDateTime expireTime = redisData.getExpireTime();
+            if(expireTime.isAfter(LocalDateTime.now())){
+                // 没有过期
+                return r;
+            }
+            else {
+                r = JSONUtil.toBean((JSONObject) redisData.getData(),type);
+            }
         }
         String lockKey = LOCK_ZB_KEY + id;
         boolean isLock = tryLock(lockKey);

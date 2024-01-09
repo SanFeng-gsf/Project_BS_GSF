@@ -27,6 +27,14 @@ public class ZhaoBController {
     }
 
     /**
+     * 根据项目名称查看招标信息详情 (含有已投标的投标信息)
+     */
+    @PostMapping("/selectByProjectName")
+    public Result selectByProjectName(@RequestBody ZhaoBDTO zhaoBDTO){
+        return iZhaoBService.selectByProjectName(zhaoBDTO.getProjectName());
+    }
+
+    /**
      * 分页查询所有公司的招标信息
      * @return 所以的招标信息
      */
@@ -42,10 +50,5 @@ public class ZhaoBController {
     public Result insert(@RequestBody ZhaoB zhaoB){
         return iZhaoBService.insert(zhaoB);
     }
-
-    /**
-     *
-     */
-
 
 }
