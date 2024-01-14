@@ -23,6 +23,7 @@ public class MvcConfig implements WebMvcConfigurer {
         registry.addInterceptor(new LoginInterceptor())
                 .excludePathPatterns(   // 排除的拦截器路径(可以直接浏览的)
                         "/zb/**",
+                        "/tb/**",
                         "/user/**",
                         "/shop/**",
                         "/shop-type/**",

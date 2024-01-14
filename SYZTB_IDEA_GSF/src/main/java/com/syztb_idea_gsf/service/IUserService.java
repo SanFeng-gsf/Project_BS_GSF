@@ -23,4 +23,5 @@ public interface IUserService extends IService<User> {
     Result insert(User user);
 
 
+    Result updateMe(User user);
 }

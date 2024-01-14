@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.syztb_idea_gsf.mapper.TouBMapper">
+
+    <sql id="baseColumn">
+        id,phone,name,people_name,suo_name,project_name,money,year,project_number,number,price,create_time,update_time
+    </sql>
+
+    <select id="selectByNameAndSNameAndProjectName" resultType="com.syztb_idea_gsf.entity.TouB">
+        select <include refid="baseColumn"/>
+        from tou_b where name = #{name} and suo_name = #{sName} and project_name= #{projectName}
+    </select>
+
+</mapper>

@@ -4,13 +4,23 @@
 <mapper namespace="com.syztb_idea_gsf.mapper.ZhaoBMapper">
 
     <sql id="baseColumn">
-        id,phone,name,people_name,project_name,ex,price,create_time,update_time
+        id,phone,name,people_name,project_name,ex,price,close,end_time,create_time,update_time
     </sql>
     
     <select id="selectByName" resultType="com.syztb_idea_gsf.entity.ZhaoB">
         select <include refid="baseColumn"/>
         from zhao_b where name = #{name}
     </select>
+    <select id="selectByNameAndProjectName" resultType="com.syztb_idea_gsf.entity.ZhaoB">
+        select <include refid="baseColumn"/>
+        from zhao_b where name = #{name} and project_name= #{projectName}
+    </select>
+    <update id="updateClose" >
+        update zhao_b set is_close = true where name = #{name} and project_name= #{projectName}
+    </update>
+    <update id="updateOpen">
+        update zhao_b set is_close = false where name = #{name} and project_name= #{projectName}
+    </update>
     <select id="selectAll" resultType="com.syztb_idea_gsf.entity.ZhaoB">
         select <include refid="baseColumn"/>
         from zhao_b

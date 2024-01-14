@@ -3,9 +3,11 @@ package com.syztb_idea_gsf.entity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -56,6 +58,18 @@ public class ZhaoB implements Serializable {
      * 招标最高价格
      */
     private int price;
+
+    /**
+     * 是否临时禁止招标项目 默认false
+     */
+    private boolean close;
+
+    /**
+     * 本项目招标截止时间
+     * @JsonFormat 将前端json里面的时间转为对应的 时间类型
+     */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss" , timezone = "GMT+08:00")
+    private LocalDateTime endTime;
 
     /**
      * 创建时间

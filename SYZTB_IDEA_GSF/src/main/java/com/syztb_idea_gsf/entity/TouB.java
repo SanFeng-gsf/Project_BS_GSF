@@ -45,7 +45,7 @@ public class TouB implements Serializable {
     /**
      * 所投公司的名称
      */
-    private String sName;
+    private String suoName;
 
     /**
      * 投标项目名称

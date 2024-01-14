@@ -16,6 +16,7 @@ import com.syztb_idea_gsf.entity.LoginFormDTO;
 import com.syztb_idea_gsf.entity.User;
 import com.syztb_idea_gsf.mapper.UserMapper;
 import com.syztb_idea_gsf.service.IUserService;
+import com.syztb_idea_gsf.utils.CacheClient;
 import com.syztb_idea_gsf.utils.RedisConstants;
 import com.syztb_idea_gsf.utils.RegexUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +40,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
 
     @Resource
     private StringRedisTemplate stringRedisTemplate;
+
+    @Resource
+    private CacheClient cacheClient;
 
     @Override
     public Result sendCode(String phone) {
@@ -109,17 +113,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
             // 该用户为新用户，重新创建 (前端需获取进行判断)
             return Result.ok(-1);
         }
-        // BeanUtil 糊涂里面的工具类, copy 复制信息
-        // redis 保存 提前生成一个随机 token 作为登入令牌
-        String token = UUID.randomUUID().toString();
-        UserDTO userDTO = BeanUtil.copyProperties(user, UserDTO.class);
-        Map<String, Object> userMap = BeanUtil.beanToMap(userDTO, new HashMap<>(),
-                CopyOptions.create().setIgnoreNullValue(true)
-                        .setFieldValueEditor((fieldName, fieldValue) -> fieldValue.toString()));
-        String tokenKey = LOGIN_USER_KEY + token;
-        stringRedisTemplate.opsForHash().putAll(tokenKey, userMap);
-        // 设置 token 有效期
-        stringRedisTemplate.expire(tokenKey, LOGIN_USER_TTL, TimeUnit.MINUTES);
+        // 设置 token 作为登入令牌
+        setToken(user);
         return Result.ok();
     }
 
@@ -129,8 +124,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         // ？
         String key = LOGIN_NAME_PASSWORD_KEY + name;
         String cathePassword = stringRedisTemplate.opsForValue().get(key);
+        User user = null;
         if(cathePassword==null){
-            User user = query().eq("name", name).one();
+            user = query().eq("name", name).one();
             if(user==null){
                 // 该用户为新用户，重新创建 (前端需获取进行判断)
                 return Result.ok(-1);
@@ -145,7 +141,26 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
                 return Result.fail("密码错误");
             }
         }
+        // 设置 token 作为登入令牌
+        setToken(user);
         return Result.ok();
+    }
+
+    /**
+     * 设置 token
+     */
+    private void setToken(User user){
+        // BeanUtil 糊涂里面的工具类, copy 复制信息
+        // redis 保存 提前生成一个随机 token 作为登入令牌
+        String token = UUID.randomUUID().toString();
+        UserDTO userDTO = BeanUtil.copyProperties(user, UserDTO.class);
+        Map<String, Object> userMap = BeanUtil.beanToMap(userDTO, new HashMap<>(),
+                CopyOptions.create().setIgnoreNullValue(true)
+                        .setFieldValueEditor((fieldName, fieldValue) -> fieldValue.toString()));
+        String tokenKey = LOGIN_USER_KEY + token;
+        stringRedisTemplate.opsForHash().putAll(tokenKey, userMap);
+        // 设置 token 有效期
+        stringRedisTemplate.expire(tokenKey, LOGIN_USER_TTL, TimeUnit.MINUTES);
     }
 
     @Override
@@ -158,7 +173,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
 
     @Override
     public Result selectByPhone(String phone) {
-        User user = query().eq("phone",phone).one();
+        User user = cacheClient.queryWithLogicalExpire(CACHE_USER_KEY,phone,User.class,
+                s->query().eq("phone",phone).one(),CACHE_USER_TTL,TimeUnit.MINUTES);
         return Result.ok(user);
     }
 
@@ -182,6 +198,38 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         }
         // Mysql 数据库创建用户
         save(user);
+        return Result.ok();
+    }
+
+    @Override
+    public Result updateMe(User user) {
+        // 注意密码处理 (还未处理)
+        // ？
+        Long id = user.getId();
+        User sqluser = query().eq("id", id).one();
+        String sqlPhone = sqluser.getPhone();
+        String sqlName = sqluser.getName();
+        // 判断 手机号与公司名称是否修改
+        if(!user.getPhone().equals(sqlPhone)){
+            if (RegexUtils.isPhoneInvalid(sqlPhone)) {
+                return Result.fail("手机号无效");
+            }
+            User user1 = query().eq("phone", user.getPhone()).one();
+            if(user1!=null){
+                return Result.fail("该手机号已被绑定，请更换新的手机号");
+            }
+        }
+        if(!user.getName().equals(sqlName)){
+            User user1 = query().eq("name", user.getName()).one();
+            if(user1!=null){
+                return Result.fail("该公司已注册，请更换公司名称");
+            }
+        }
+        saveOrUpdate(user);
+        String key = CACHE_USER_KEY + sqlPhone;
+        stringRedisTemplate.delete(key);
+        key = LOGIN_NAME_PASSWORD_KEY + sqlName;
+        stringRedisTemplate.delete(key);
         return Result.ok();
     }
 

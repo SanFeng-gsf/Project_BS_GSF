@@ -6,6 +6,7 @@ import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.syztb_idea_gsf.dto.Result;
+import com.syztb_idea_gsf.entity.DTO;
 import com.syztb_idea_gsf.entity.TouB;
 import com.syztb_idea_gsf.entity.ZhaoB;
 import com.syztb_idea_gsf.mapper.TouBMapper;
@@ -71,15 +72,15 @@ public class ZhaoBServiceImpl extends ServiceImpl<ZhaoBMapper, ZhaoB> implements
     }
 
     @Override
-    public Result selectByProjectName(String projectName) {
+    public Result selectDetail(DTO dto) {
         List<Map<String,Object>> list = new ArrayList<>();
-        ZhaoB zhaoB = cacheClient.queryWithLogicalExpire(CACHE_ZB_KEY, projectName, ZhaoB.class,
-                sql -> query().eq("project_name", projectName).one(), 180L, TimeUnit.MINUTES);
+        ZhaoB zhaoB = cacheClient.queryWithLogicalExpire(CACHE_ZB_KEY, dto.getProjectName(), ZhaoB.class,
+                sql -> this.baseMapper.selectByNameAndProjectName(dto.getName(),dto.getProjectName()), 180L, TimeUnit.MINUTES);
         if(zhaoB==null){
             return Result.fail("暂无该项目详情,请稍后刷新重试");
         }
         list.add(0,Map.of("zhaoB",zhaoB));
-        String key = CACHE_TB_KEY + projectName;
+        String key = CACHE_TB_KEY + dto.getProjectName();
         String cache = stringRedisTemplate.opsForValue().get(key);
         List<TouB> touBlist = null;
         if(cache!=null){
@@ -104,13 +105,13 @@ public class ZhaoBServiceImpl extends ServiceImpl<ZhaoBMapper, ZhaoB> implements
             list.remove(1);
             list.add(1,Map.of("touB",touBlist));
         }
-        String lockKey = LOCK_TB_KEY + projectName;
+        String lockKey = LOCK_TB_KEY + dto.getProjectName();
         boolean newLock = tryLock(lockKey);
         if (newLock) {
             // 开启独立线程 实现缓存重建
             CACHE_REBUILD_EXECUTOR.submit(() -> {
                 try {
-                    List<TouB> sqltouBlist = touBMapper.selectByMap(Map.of("project_name", projectName));
+                    List<TouB> sqltouBlist = touBMapper.selectByMap(Map.of("project_name", dto.getProjectName()));
                     // 封装逻辑过期时间
                     RedisData redisData = new RedisData();
                     redisData.setData(sqltouBlist);
@@ -153,12 +154,77 @@ public class ZhaoBServiceImpl extends ServiceImpl<ZhaoBMapper, ZhaoB> implements
 
     @Override
     public Result insert(ZhaoB zhaoB) {
+        // 前端传入的关键数据不能为空 这里后端就不进行效验
+        String name = zhaoB.getName();
         String projectName = zhaoB.getProjectName();
-        List<ZhaoB> zhao = this.baseMapper.selectByMap(Map.of("project_name", projectName));
-        if(zhao.size()>0){
+        ZhaoB zhao = this.baseMapper.selectByNameAndProjectName(name, projectName);
+        if(zhao!=null){
+            // 一家公司的招标项目不能重复
             return Result.fail("该招标项目已存在");
         }
+        LocalDateTime endTime = zhaoB.getEndTime();
+        if(!endTime.isAfter(LocalDateTime.now())){
+            return Result.fail("截止时间不能在当前时间之前");
+        }
+        save(zhaoB);
+        // 数据库新增 删除之前的相关缓存
+        stringRedisTemplate.delete(CACHE_ALL_ZB_KEY);
+        String key = CACHE_ZB_KEY + zhaoB.getName();
+        stringRedisTemplate.delete(key);
         return Result.ok();
+    }
+
+    @Override
+    public Result close(DTO dto) {
+        if(dto==null){
+            return Result.fail("未选择是否暂停(禁用)");
+        }else if(!dto.isClose()){
+            return Result.fail("该项目已启用");
+        }
+        boolean result = this.baseMapper.updateClose(dto.getName(), dto.getProjectName());
+        if(!result){
+            return Result.fail("暂停项目失败");
+        }
+        // 数据库更新 删除之前的相关缓存
+        stringRedisTemplate.delete(CACHE_ALL_ZB_KEY);
+        String key = CACHE_ZB_KEY + dto.getName();
+        stringRedisTemplate.delete(key);
+        return Result.ok();
+    }
+
+    @Override
+    public Result open(DTO dto) {
+        if(dto==null){
+            return Result.fail("未选择是否暂停(禁用)");
+        }else if(dto.isClose()){
+            return Result.fail("该项目已暂停(禁用)");
+        }
+        boolean result = this.baseMapper.updateOpen(dto.getName(), dto.getProjectName());
+        if(!result){
+            return Result.fail("启动项目失败");
+        }
+        // 数据库更新 删除之前的相关缓存
+        stringRedisTemplate.delete(CACHE_ALL_ZB_KEY);
+        String key = CACHE_ZB_KEY + dto.getName();
+        stringRedisTemplate.delete(key);
+        return Result.ok();
+    }
+
+    @Override
+    public Result delete(DTO dto) {
+        ZhaoB sqlzhaoB = this.baseMapper.selectByNameAndProjectName(dto.getName(), dto.getProjectName());
+        if(sqlzhaoB==null){
+            return Result.ok("删除成功");
+        }
+        boolean isDelete = removeById(sqlzhaoB);
+        if(!isDelete){
+            return Result.fail("删除失败");
+        }
+        // 数据库删除 删除之前的相关缓存
+        stringRedisTemplate.delete(CACHE_ALL_ZB_KEY);
+        String key = CACHE_ZB_KEY + dto.getName();
+        stringRedisTemplate.delete(key);
+        return Result.ok("删除成功");
     }
 
     /**

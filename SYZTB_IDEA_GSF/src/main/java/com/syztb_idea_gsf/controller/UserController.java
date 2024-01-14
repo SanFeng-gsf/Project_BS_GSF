@@ -50,7 +50,8 @@ public class UserController {
      */
     @PostMapping("/logout")
     public Result logout(HttpServletRequest request){
-        // 未测试 可能存在问题
+        // 可能存在一点小问题 有了前端再测试
+        // 请求头 Header 里面 设置 authorization
         return userService.logout(request);
     }
 
@@ -63,11 +64,19 @@ public class UserController {
     }
 
     /**
-     * 根据手机号查询用户基本信息
+     * 根据手机号查询用户基本信息 (前端获取登入者的手机号查看个人信息 (我的) )
      */
     @PostMapping("/selectByPhone")
     public Result selectByPhone(@RequestBody LoginFormDTO loginForm){
         return userService.selectByPhone(loginForm.getPhone());
+    }
+
+    /**
+     * 更新个人信息 (需要根据 id )
+     */
+    @PostMapping("/updateMe")
+    public Result updateMe(@RequestBody User user){
+        return userService.updateMe(user);
     }
 
 }
