@@ -114,8 +114,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
             return Result.ok(-1);
         }
         // 设置 token 作为登入令牌
-        setToken(user);
-        return Result.ok();
+        // setToken(user);
+        return Result.ok(setToken(user));
     }
 
     @Override
@@ -142,14 +142,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
             }
         }
         // 设置 token 作为登入令牌
-        setToken(user);
-        return Result.ok();
+        // setToken(user);
+        // 将 token 传回前端
+        return Result.ok(setToken(user));
     }
 
     /**
      * 设置 token
      */
-    private void setToken(User user){
+    private String setToken(User user){
         // BeanUtil 糊涂里面的工具类, copy 复制信息
         // redis 保存 提前生成一个随机 token 作为登入令牌
         String token = UUID.randomUUID().toString();
@@ -160,7 +161,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         String tokenKey = LOGIN_USER_KEY + token;
         stringRedisTemplate.opsForHash().putAll(tokenKey, userMap);
         // 设置 token 有效期
-        stringRedisTemplate.expire(tokenKey, LOGIN_USER_TTL, TimeUnit.MINUTES);
+        Boolean expire = stringRedisTemplate.expire(tokenKey, LOGIN_USER_TTL, TimeUnit.MINUTES);
+        if(expire){
+            return tokenKey;
+        }
+        return null;
     }
 
     @Override

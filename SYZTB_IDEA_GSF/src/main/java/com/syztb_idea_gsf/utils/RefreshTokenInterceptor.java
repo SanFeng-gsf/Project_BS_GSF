@@ -32,8 +32,8 @@ public class RefreshTokenInterceptor implements HandlerInterceptor {
             // token 为空 放行
             return true;
         }
-        String key = RedisConstants.LOGIN_USER_KEY + token;
-        Map<Object, Object> userMap = stringRedisTemplate.opsForHash().entries(key);
+        // String key = RedisConstants.LOGIN_USER_KEY + token;
+        Map<Object, Object> userMap = stringRedisTemplate.opsForHash().entries(token);
         if(userMap.isEmpty()){
             return true;
         }
@@ -41,7 +41,7 @@ public class RefreshTokenInterceptor implements HandlerInterceptor {
         UserDTO userDTO = BeanUtil.fillBeanWithMap(userMap, new UserDTO(), false);
         UserHolder.saveUser(userDTO);
         // 刷新 token 的有效期
-        stringRedisTemplate.expire(key,LOGIN_USER_TTL, TimeUnit.MINUTES);
+        stringRedisTemplate.expire(token,LOGIN_USER_TTL, TimeUnit.MINUTES);
         return true;
     }
 
