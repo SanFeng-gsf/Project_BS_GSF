@@ -1,11 +1,9 @@
 package com.syztb_idea_gsf.controller;
 
 import com.syztb_idea_gsf.dto.Result;
-import com.syztb_idea_gsf.dto.UserDTO;
 import com.syztb_idea_gsf.entity.LoginFormDTO;
 import com.syztb_idea_gsf.entity.User;
 import com.syztb_idea_gsf.service.IUserService;
-import com.syztb_idea_gsf.utils.UserHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
@@ -52,8 +50,6 @@ public class UserController {
      */
     @PostMapping("/logout")
     public Result logout(HttpServletRequest request){
-        // 可能存在一点小问题 有了前端再测试
-        // 请求头 Header 里面 设置 authorization
         return userService.logout(request);
     }
 

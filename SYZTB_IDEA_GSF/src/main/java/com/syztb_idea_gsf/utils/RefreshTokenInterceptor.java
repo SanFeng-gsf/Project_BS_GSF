@@ -1,14 +1,11 @@
 package com.syztb_idea_gsf.utils;
 
-import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
-import com.syztb_idea_gsf.dto.UserDTO;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static com.syztb_idea_gsf.utils.RedisConstants.LOGIN_USER_TTL;
@@ -43,6 +40,6 @@ public class RefreshTokenInterceptor implements HandlerInterceptor {
 
     @Override
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
-        UserHolder.removeUser();
+//        UserHolder.removeUser();
     }
 }

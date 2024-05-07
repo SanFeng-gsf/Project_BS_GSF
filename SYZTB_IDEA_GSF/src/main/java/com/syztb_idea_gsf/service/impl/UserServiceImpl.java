@@ -1,12 +1,9 @@
 package com.syztb_idea_gsf.service.impl;
 
-import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.core.bean.copier.CopyOptions;
 import cn.hutool.core.lang.UUID;
 import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.syztb_idea_gsf.dto.Result;
-import com.syztb_idea_gsf.dto.UserDTO;
 import com.syztb_idea_gsf.entity.LoginFormDTO;
 import com.syztb_idea_gsf.entity.User;
 import com.syztb_idea_gsf.mapper.UserMapper;
@@ -16,7 +13,6 @@ import com.syztb_idea_gsf.utils.RegexUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
@@ -124,8 +120,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
 
     @Override
     public Result loginByName(String name, String password) {
-        // 先将前端加密后的密码解密 再与缓存中的密码比较
-        // ？
         String key = LOGIN_NAME_PASSWORD_KEY + name;
         String cathePassword = stringRedisTemplate.opsForValue().get(key);
         User user = new User();
