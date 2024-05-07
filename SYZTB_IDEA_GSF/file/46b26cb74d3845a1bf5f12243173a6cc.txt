@@ -1,0 +1,42 @@
+IOC ：控制反转，把创建好的类交给 Spring 容器进行管理
+AOP：面向切面编程，在不修改源代码的情况下，在前面添加新的代码 （日志）（动态代理）
+
+动态代理：JDK、CGLIB（没有实现接口）
+
+Spring Boot 可以快速创建一个可独立运行的 Spring 应用程序
+提供了大量的注解，方便我们使用
+而且部署变得简单，SpringBoot内置了servlet容器  SpringBoot的项目可以打成一个jar包。
+
+Springmvc  执行流程
+用户发送请求到控制器 DispatcherServlet --- 收到请求根据请求信息找到处理器进行处理 Handler  
+通过对应的适配器 HandlerAdapter封装后再用统一的处理器处理 -- 最后进行解析渲染响应给用户
+
+	spring事务管理	 2  读已提交
+默认回滚的是：RuntimeException、Error   
+- spring事务什么时候失效?  
+发生了错误异常、数据库不支持事务
+
+- 事务特性
+原子性（Atomicity）：事务在执行过程中发生错误，会被回滚（Rollback）到事务开始前的状态
+一致性（Consistency）：在事务开始之前和事务结束以后，数据库的完整性没有被破坏。
+隔离性（Isolation）：防止多个事务并发执行时由于交叉执行而导致数据的不一致
+持久性（Durability）: 事务处理结束后，对数据的修改就是永久的
+
+5. 跨域怎么解决
+创建了一个类进行设置、实现了WebMvcConfigurer接口，加上注解@configuration 实现全局的跨域配置 
+注解可以代替用 xml 配置文件
+@Configuration注解主要是给我们的类加上了 cglib 动态代理
+
+11. SpringMVC 中的 常用注解 
+@SpringBootApplication : 会自动扫描配置，启动项目
+@MapperScan ：指定要变成实现类的接口所在的包，编译之后都会生成相应的实现类
+@RestController ： @ResponseBody + @Controller 用来确保接收请求并返回响应
+@RequestMapping  ：设置对应的请求url
+@ResponseBody ：将返回的数据写入响应体中并返回给客户端，可以将字符串转化为  json 格式
+@Autowired ：实现自动装配
+@Service ：加上该注解会将当前类自动注入到spring容器中
+@Configuration注解主要是给我们的类加上了 cglib 动态代理
+
+异常断点
+打断点  右键  左下角更多  左上角加号  第三个是异常断点  然后就可以输入
+

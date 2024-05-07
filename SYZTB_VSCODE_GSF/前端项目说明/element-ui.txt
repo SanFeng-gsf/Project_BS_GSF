@@ -1,0 +1,35 @@
+官网查看	https://element.eleme.cn/#/zh-CN/component/quickstart
+
+安装		npm i element-ui -S
+
+按需导入	npm install babel-plugin-component -D
+
+.babelrc 修改
+{
+  "presets": [["es2015", { "modules": false }]],
+  "plugins": [
+    [
+      "component",
+      {
+        "libraryName": "element-ui",
+        "styleLibraryName": "theme-chalk"
+      }
+    ]
+  ]
+}
+
+样式
+import 'element-ui/lib/theme-chalk/index.css';
+
+按需引入
+import { Button, Select } from 'element-ui';
+
+Vue.component(Button.name, Button);
+Vue.component(Select.name, Select);
+或写为
+Vue.use(Button)
+Vue.use(Select)
+
+可以传入一个全局配置对象
+该对象目前支持 size 与 zIndex 字段。size 用于改变组件的默认尺寸，zIndex 设置弹框的初始 z-index（默认值：2000）
+Vue.prototype.$ELEMENT = { size: 'small', zIndex: 3000 };

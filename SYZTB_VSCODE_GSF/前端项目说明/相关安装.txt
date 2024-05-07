@@ -1,0 +1,22 @@
+基于VueCli自定义创建项目
+npm install -g @vue/cli 
+npm install -g -force @vue/cli 	强行覆盖已存在的
+npm cache clean --force	清理缓存
+
+1. 在对应创建位置下 shift+鼠标右键	打开Powershell窗口（终端）
+2. 创建项目	vue create 项目名称	一种的默认，这里选中最后一个Manually select features（自定义）
+3. 选择需要的语法特性（上下左右键 ，空格选中）Babel、Router、（Vuex）、Css、Linter/Formatter
+4. 选着版本	vue2、vue3
+5. 是否选中历史模式（路由，历史模式地址不带#）
+6. 选着Css预处理器		一般选择 Less
+7. 选择规范（Linter/Formatter）	一般选择无分号规范（标准化 Stad config 三个）
+8. 在什么时候校验	选择在保存时	Lint on save
+9. 你想将配置文件放哪	在单独的配置文件中	In dedicated config files
+10. 是否保存	（以后都这样创建）	如果保存，输入保存的名称
+
+安装 axios		npm i axios
+
+安装	element-ui	npm i element-ui -S
+按需导入	npm install babel-plugin-component -D
+
+安装 md5 加密 	npm install --save js-md5

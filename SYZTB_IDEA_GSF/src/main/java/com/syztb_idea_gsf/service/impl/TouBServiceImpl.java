@@ -3,6 +3,7 @@ package com.syztb_idea_gsf.service.impl;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONUtil;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.syztb_idea_gsf.dto.Result;
 import com.syztb_idea_gsf.entity.DTO;
@@ -55,7 +56,7 @@ public class TouBServiceImpl extends ServiceImpl<TouBMapper, TouB> implements IT
                 return Result.fail("该公司还未进行投标");
             }
             setCacheRebuildExecutor(null,list,key,lockKey);
-            return Result.ok(list);
+            return Result.ok("查询成功",list);
         }
         // 命中 先把 json 反序列化为对象
         RedisData redisData = JSONUtil.toBean(cache, RedisData.class);
@@ -63,10 +64,10 @@ public class TouBServiceImpl extends ServiceImpl<TouBMapper, TouB> implements IT
         List<TouB> list = JSONUtil.toList((JSONArray) redisData.getData(), TouB.class);
         LocalDateTime expireTime = redisData.getExpireTime();
         if(expireTime.isAfter(LocalDateTime.now())){
-            return Result.ok(list);
+            return Result.ok("查询成功",list);
         }
         setCacheRebuildExecutor(name,null,key,lockKey);
-        return Result.ok(list);
+        return Result.ok("查询成功",list);
     }
 
     @Override
@@ -77,13 +78,11 @@ public class TouBServiceImpl extends ServiceImpl<TouBMapper, TouB> implements IT
         if(touB==null){
             return Result.fail("暂无投标信息");
         }
-        return Result.ok(touB);
+        return Result.ok("查询成功",touB);
     }
 
     @Override
     public Result insert(TouB touB) {
-        // 前端传入的关键数据不能为空 这里后端就不进行效验
-        // 检查该公司是否已经投标过目标公司的该项目 (暂规定一个项目只能参与投标一次)
         TouB sqltouB = this.baseMapper.selectByNameAndSNameAndProjectName(touB.getName(),touB.getSuoName(),touB.getProjectName());
         if(sqltouB!=null){
             return Result.fail("已投标过该项目,请勿重复投标");
@@ -105,7 +104,8 @@ public class TouBServiceImpl extends ServiceImpl<TouBMapper, TouB> implements IT
         // 数据库新增 删除之前的相关缓存
         String key = CACHE_TB_KEY + touB.getName();
         stringRedisTemplate.delete(key);
-        return Result.ok();
+        stringRedisTemplate.delete(CACHE_TB_KEY + touB.getProjectName());
+        return Result.ok("投标成功");
     }
 
     @Override
@@ -126,6 +126,23 @@ public class TouBServiceImpl extends ServiceImpl<TouBMapper, TouB> implements IT
         return Result.ok("删除成功");
     }
 
+    @Override
+    public Result selectByN(DTO dto) {
+        QueryWrapper<TouB> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("suo_name",dto.getSuoName());
+        queryWrapper.eq("project_name",dto.getProjectName());
+        List<TouB> touBList = this.baseMapper.selectList(queryWrapper);
+        return Result.ok("success",touBList);
+    }
+
+    @Override
+    public Result setSuccessById(Integer id) {
+        if (this.baseMapper.setSuccessById(id)) {
+            return Result.ok("success");
+        }
+        return Result.fail("fail");
+    }
+
     /**
      * 判断招标项目是否过期 是否禁用
      */
@@ -139,7 +156,7 @@ public class TouBServiceImpl extends ServiceImpl<TouBMapper, TouB> implements IT
             // 过期
             return -1;
         }
-        if(zhaoB.isClose()){
+        if(zhaoB.getClose() == 1){
             // 禁用 暂停
             return -2;
         }

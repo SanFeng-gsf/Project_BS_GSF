@@ -8,6 +8,7 @@ import org.apache.ibatis.annotations.Mapper;
 @Mapper
 public interface TouBMapper extends BaseMapper<TouB> {
 
-    TouB selectByNameAndSNameAndProjectName(String name, String sName,String projectName);
+    TouB selectByNameAndSNameAndProjectName(String name, String suoName,String projectName);
 
+    boolean setSuccessById(Integer id);
 }

@@ -5,10 +5,7 @@ import com.syztb_idea_gsf.entity.TouB;
 import com.syztb_idea_gsf.entity.DTO;
 import com.syztb_idea_gsf.service.ITouBService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 
@@ -30,7 +27,7 @@ public class TouBController {
     }
 
     /**
-     * 根据公司名称、所投公司名称、项目名称查询投标信息详情
+     * 根据公司名称、所投公司名称、项目名称查询投标信息详情 (三个一起才可以)
      */
     @PostMapping("/selectDetail")
     public Result selectDetail(@RequestBody DTO dto){
@@ -55,4 +52,19 @@ public class TouBController {
         return iTouBService.delete(dto);
     }
 
+    /**
+     * 根据招标公司名称(所投)、项目名称查询所有参与投标的公司
+     */
+    @PostMapping("/selectByN")
+    public Result selectByN(@RequestBody DTO dto) {
+        return iTouBService.selectByN(dto);
+    }
+
+    /**
+     * 根据 id 修改为成功投标
+     */
+    @GetMapping("/setSuccessById")
+    public Result setSuccessById(@RequestParam Integer id) {
+        return iTouBService.setSuccessById(id);
+    }
 }

@@ -9,7 +9,10 @@
 
     <select id="selectByNameAndSNameAndProjectName" resultType="com.syztb_idea_gsf.entity.TouB">
         select <include refid="baseColumn"/>
-        from tou_b where name = #{name} and suo_name = #{sName} and project_name= #{projectName}
+        from tou_b where name = #{name} and suo_name = #{suoName} and project_name= #{projectName}
     </select>
 
+    <update id="setSuccessById">
+        update tou_b set success = true where id = #{id}
+    </update>
 </mapper>

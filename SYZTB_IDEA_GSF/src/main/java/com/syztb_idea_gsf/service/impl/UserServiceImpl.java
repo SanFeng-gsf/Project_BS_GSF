@@ -4,11 +4,6 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.bean.copier.CopyOptions;
 import cn.hutool.core.lang.UUID;
 import cn.hutool.core.util.RandomUtil;
-import cn.hutool.crypto.SecureUtil;
-import cn.hutool.crypto.digest.BCrypt;
-import cn.hutool.crypto.symmetric.AES;
-import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
-import com.baomidou.mybatisplus.extension.conditions.query.QueryChainWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.syztb_idea_gsf.dto.Result;
 import com.syztb_idea_gsf.dto.UserDTO;
@@ -17,18 +12,15 @@ import com.syztb_idea_gsf.entity.User;
 import com.syztb_idea_gsf.mapper.UserMapper;
 import com.syztb_idea_gsf.service.IUserService;
 import com.syztb_idea_gsf.utils.CacheClient;
-import com.syztb_idea_gsf.utils.RedisConstants;
 import com.syztb_idea_gsf.utils.RegexUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static com.syztb_idea_gsf.utils.RedisConstants.*;
@@ -57,15 +49,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         stringRedisTemplate.opsForValue().set(key, code, LOGIN_CODE_TTL, TimeUnit.MINUTES);
         // 先使用日志显示
         log.debug("发送短信验证码成功,验证码：{}", code);
-        return Result.ok();
+        return Result.ok("验证码发送成功");
     }
 
     @Override
     public Result login(LoginFormDTO loginForm) {
         String phone = loginForm.getPhone();
-        if (RegexUtils.isPhoneInvalid(phone)) {
-            return Result.fail("手机号无效");
-        }
+        String name = loginForm.getName();
         String password = loginForm.getPassword();
         String code = loginForm.getCode();
         if (code != null && password == null) {
@@ -75,47 +65,61 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
             }
         }
         if (code == null && password != null) {
-            String cathePassword = stringRedisTemplate.opsForValue().get(LOGIN_PASSWORD_KEY + phone);
+            String cathePassword = stringRedisTemplate.opsForValue().get(LOGIN_PASSWORD_KEY + name);
+            User user = query().eq("name", name).one();
+            User user1 = new User();
+            String token;
+            String id;
             if(cathePassword!=null){
-                // 先将前端加密后的密码解密 再与缓存中的密码比较
-                // ？
                 if(!password.equals(cathePassword)){
                     return Result.fail("密码错误");
                 }
-            }else {
-                User user = query().eq("phone", phone).one();
-                // List<User> user = userMapper.selectByMap(Map.of("phone", phone));
-                if (user == null) {
-                    // 该用户为新用户，重新创建 (前端需获取进行判断)
-                    return Result.ok(-1);
+                token = setToken(user);
+                if(token==null){
+                    return Result.fail("获取 token 失败");
                 }
-                if(!password.equals(user.getPassword())){
-                    return Result.fail("密码错误");
+                id = user.getId().toString();
+                Map<String, String> map = Map.of("token", token,"userId",id);
+                return Result.ok("登入成功",map);
+            }else {
+                if (user != null) {
+                    if(!password.equals(user.getPassword())){
+                        return Result.fail("密码错误");
+                    }
+                    token = setToken(user);
+                    id = user.getId().toString();
+                } else {
+                    // 该用户为新用户，重新创建 手机号密码登入
+                    user1.setName(name);
+                    user1.setPassword(password);
+                    save(user1);
+                    token = setToken(user1);
+                    id = user1.getId().toString();
+                }
+                if(token==null){
+                    return  Result.fail("获取 token 失败");
                 }
                 // 将密码存入缓存中
-                stringRedisTemplate.opsForValue().set(LOGIN_PASSWORD_KEY + phone,password,LOGIN_PASSWORD_TTL,TimeUnit.MINUTES);
+                stringRedisTemplate.opsForValue().set(LOGIN_PASSWORD_KEY + name,password,LOGIN_PASSWORD_TTL,TimeUnit.MINUTES);
+                Map<String, String> map = Map.of("token", token,"userId",id);
+                return Result.ok("登入成功",map);
             }
-
-            // bcrypt 加密 (不能解密) 注册时加密存入数据库
-//            if(!BCrypt.checkpw(password,newPassword)){
-//                return Result.fail("密码错误");
-//            }
-
-            // hutool 加密解密 (待完成)
-//            byte[] key = SecureUtil.generateKey(SymmetricAlgorithm.AES.getValue()).getEncoded();
-//            AES aes = SecureUtil.aes(key);
-//            String encryptHex = aes.encryptHex(password);
-//            String decryptStr = aes.decryptStr(password);
-
         }
         User user = query().eq("phone", phone).one();
         if (user == null) {
-            // 该用户为新用户，重新创建 (前端需获取进行判断)
-            return Result.ok(-1);
+            // 该用户为新用户，重新创建 手机号验证码登入
+            User user1 = new User();
+            user1.setPhone(phone);
+            save(user1);
+            user = user1;
         }
         // 设置 token 作为登入令牌
         // setToken(user);
-        return Result.ok(setToken(user));
+        if(setToken(user)==null){
+            return  Result.fail("获取 token 失败");
+        }
+        Map<String, String> map = Map.of("token", Objects.requireNonNull(setToken(user)),"userId",user.getId().toString());
+        return Result.ok("登入成功",map);
     }
 
     @Override
@@ -124,12 +128,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         // ？
         String key = LOGIN_NAME_PASSWORD_KEY + name;
         String cathePassword = stringRedisTemplate.opsForValue().get(key);
-        User user = null;
+        User user = new User();
         if(cathePassword==null){
             user = query().eq("name", name).one();
             if(user==null){
-                // 该用户为新用户，重新创建 (前端需获取进行判断)
-                return Result.ok(-1);
+                // 该用户为新用户，重新创建 名称密码登入
+                User user1 = new User();
+                user1.setPhone(name);
+                user1.setPassword(password);
+                save(user1);
+                user = user1;
             }
             cathePassword = user.getPassword();
             if(!password.equals(cathePassword)){
@@ -144,24 +152,22 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         // 设置 token 作为登入令牌
         // setToken(user);
         // 将 token 传回前端
-        return Result.ok(setToken(user));
+        Map<String, String> map = Map.of("token", Objects.requireNonNull(setToken(user)),"userId",user.getId().toString());
+        return Result.ok("登入成功",map);
     }
 
     /**
      * 设置 token
      */
     private String setToken(User user){
-        // BeanUtil 糊涂里面的工具类, copy 复制信息
-        // redis 保存 提前生成一个随机 token 作为登入令牌
+        if (user.getId() == null) {
+            return null;
+        }
         String token = UUID.randomUUID().toString();
-        UserDTO userDTO = BeanUtil.copyProperties(user, UserDTO.class);
-        Map<String, Object> userMap = BeanUtil.beanToMap(userDTO, new HashMap<>(),
-                CopyOptions.create().setIgnoreNullValue(true)
-                        .setFieldValueEditor((fieldName, fieldValue) -> fieldValue.toString()));
         String tokenKey = LOGIN_USER_KEY + token;
-        stringRedisTemplate.opsForHash().putAll(tokenKey, userMap);
+        stringRedisTemplate.opsForHash().put(tokenKey,"id",user.getId().toString());
         // 设置 token 有效期
-        Boolean expire = stringRedisTemplate.expire(tokenKey, LOGIN_USER_TTL, TimeUnit.MINUTES);
+        boolean expire = Boolean.TRUE.equals(stringRedisTemplate.expire(tokenKey, LOGIN_USER_TTL, TimeUnit.MINUTES));
         if(expire){
             return tokenKey;
         }
@@ -170,17 +176,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
 
     @Override
     public Result logout(HttpServletRequest request) {
-        String token = request.getHeader("authorization");
-        String key = RedisConstants.LOGIN_USER_KEY + token;
-        stringRedisTemplate.delete(key);
-        return Result.ok();
+        String token = request.getHeader("Authorization");
+//        String key = RedisConstants.LOGIN_USER_KEY + token;
+        stringRedisTemplate.delete(token);
+        return Result.ok("删除成功");
     }
 
     @Override
     public Result selectByPhone(String phone) {
         User user = cacheClient.queryWithLogicalExpire(CACHE_USER_KEY,phone,User.class,
                 s->query().eq("phone",phone).one(),CACHE_USER_TTL,TimeUnit.MINUTES);
-        return Result.ok(user);
+        return Result.ok("查询成功",user);
     }
 
     @Override
@@ -203,7 +209,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         }
         // Mysql 数据库创建用户
         save(user);
-        return Result.ok();
+        return Result.ok("注册成功");
     }
 
     @Override
@@ -235,7 +241,40 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         stringRedisTemplate.delete(key);
         key = LOGIN_NAME_PASSWORD_KEY + sqlName;
         stringRedisTemplate.delete(key);
-        return Result.ok();
+        return Result.ok("更新成功");
+    }
+
+    @Override
+    public Result selectById(Long id) {
+        User user = query().eq("id", id).one();
+        return Result.ok("success",user);
+    }
+
+    @Override
+    public Result getUser(String name) {
+        List<User> user;
+        if (name == null) {
+            user = baseMapper.selectByMap(Map.of());
+        } else {
+            user = baseMapper.selectByMap(Map.of("name",name));
+        }
+        if(user.size()>0){
+            return Result.ok("success",user);
+        }
+        return Result.fail("未查到该公司");
+    }
+
+    @Override
+    public Result updateUser(Integer id, int ban) {
+        User user = query().eq("id", id).one();
+        user.setBan(ban);
+        boolean result = updateById(user);
+        if (!result) {
+            return Result.fail("更新失败");
+        }
+        stringRedisTemplate.delete(CACHE_USER_KEY + user.getPhone());
+        stringRedisTemplate.delete(LOGIN_NAME_PASSWORD_KEY + user.getName());
+        return Result.ok("更新成功");
     }
 
 }

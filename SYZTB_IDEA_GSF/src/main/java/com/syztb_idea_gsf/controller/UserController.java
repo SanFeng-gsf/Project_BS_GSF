@@ -48,15 +48,6 @@ public class UserController {
     }
 
     /**
-     * 获取当前登入的用户并返回
-     */
-    @PostMapping("/me")
-    public Result me(){
-        UserDTO user = UserHolder.getUser();
-        return Result.ok(user);
-    }
-
-    /**
      * 退出
      */
     @PostMapping("/logout")
@@ -83,6 +74,14 @@ public class UserController {
     }
 
     /**
+     * 根据 id 获取信息
+     */
+    @GetMapping("/selectById")
+    public Result selectById(@RequestParam Long id) {
+        return userService.selectById(id);
+    }
+
+    /**
      * 更新个人信息 (需要根据 id )
      */
     @PostMapping("/updateMe")
@@ -90,4 +89,16 @@ public class UserController {
         return userService.updateMe(user);
     }
 
+    @GetMapping("/getUser")
+    public Result getUser(@RequestParam(value = ("name"), required = false)String name){
+        return userService.getUser(name);
+    }
+
+    /**
+     * 禁用账号
+     */
+    @GetMapping("updateUser")
+    public Result updateUser(@RequestParam Integer id, int ban){
+        return userService.updateUser(id,ban);
+    }
 }

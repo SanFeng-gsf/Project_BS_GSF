@@ -9,21 +9,22 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class Result {
 
-    private Boolean success;
+    private Boolean isSuccess;
 
-    private String error;
+    private String message;
 
     private Object data;
 
-    public static Result ok(){
-        return new Result(true,null,null);
+
+    public static Result ok(String message){
+        return new Result(true,message,null);
     }
 
-    public static Result ok(Object data){
-        return new Result(true,null,data);
+    public static Result ok(String message,Object data){
+        return new Result(true,message,data);
     }
 
-    public static Result fail(String error){
-        return new Result(false,error,null);
+    public static Result fail(String message){
+        return new Result(false,message,null);
     }
 }

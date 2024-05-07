@@ -21,7 +21,11 @@ public class MvcConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(new LoginInterceptor())
-                .excludePathPatterns(   // 排除的拦截器路径(可以直接浏览的)
+                .excludePathPatterns(   // 排除的拦截器路径(可以直接浏览的写进去)
+                        "/sys/**",
+                        "/zbUn/**",
+                        "/userIcon/**",
+                        "/jb/**",
                         "/zb/**",
                         "/tb/**",
                         "/user/**",

@@ -15,12 +15,6 @@
         select <include refid="baseColumn"/>
         from zhao_b where name = #{name} and project_name= #{projectName}
     </select>
-    <update id="updateClose" >
-        update zhao_b set close = true where name = #{name} and project_name= #{projectName}
-    </update>
-    <update id="updateOpen">
-        update zhao_b set close = false where name = #{name} and project_name= #{projectName}
-    </update>
     <select id="selectAll" resultType="com.syztb_idea_gsf.entity.ZhaoB">
         select <include refid="baseColumn"/>
         from zhao_b

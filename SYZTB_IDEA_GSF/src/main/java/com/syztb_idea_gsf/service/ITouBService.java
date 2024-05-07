@@ -13,4 +13,8 @@ public interface ITouBService extends IService<TouB> {
     Result insert(TouB touB);
 
     Result delete(DTO dto);
+
+    Result selectByN(DTO dto);
+
+    Result setSuccessById(Integer id);
 }

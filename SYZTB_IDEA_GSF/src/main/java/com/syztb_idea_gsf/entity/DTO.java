@@ -4,6 +4,8 @@ import lombok.Data;
 
 @Data
 public class DTO {
+
+    private Long id;
     /**
      * 公司名称
      */

@@ -13,12 +13,17 @@ public interface IZhaoBService extends IService<ZhaoB> {
 
     Result selectAll(Integer current);
 
-    Result insert(ZhaoB zhaoB);
+    Result selectSuccess(Integer current);
 
-    Result close(DTO dto);
-
-    Result open(DTO dto);
+    Result selectUnSuccess(Integer current);
 
     Result delete(DTO dto);
 
+    boolean isFinish(Integer id);
+
+    Result updateClose(Integer id, int close);
+
+    Result selectByProjectName(String projectName, Integer current);
+
+    Result selectWeiGui(Integer current);
 }

@@ -7,7 +7,6 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
-import org.springframework.format.annotation.DateTimeFormat;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -60,9 +59,9 @@ public class ZhaoB implements Serializable {
     private int price;
 
     /**
-     * 是否临时禁止招标项目 默认false
+     * 是否临时禁止招标项目 默认 0(不禁用) 1(禁用)
      */
-    private boolean close;
+    private int close;
 
     /**
      * 本项目招标截止时间
@@ -74,10 +73,12 @@ public class ZhaoB implements Serializable {
     /**
      * 创建时间
      */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss" , timezone = "GMT+08:00")
     private LocalDateTime createTime;
 
     /**
      * 更新时间
      */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss" , timezone = "GMT+08:00")
     private LocalDateTime updateTime;
 }

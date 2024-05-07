@@ -13,10 +13,6 @@ public interface ZhaoBMapper extends BaseMapper<ZhaoB> {
 
     ZhaoB selectByNameAndProjectName(String name,String projectName);
 
-    boolean updateClose(String name,String projectName);
-
-    boolean updateOpen(String name, String projectName);
-
     List<ZhaoB> selectAll();
 
 
